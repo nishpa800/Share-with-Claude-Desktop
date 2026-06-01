@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUANT-BRAIN · Mission Control</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --panel: #111722;
+    --panel-2: #0d131d;
+    --border: #1e2a3a;
+    --ink: #e6edf3;
+    --dim: #8b9bb0;
+    --gold: #ffd230;
+    --green: #00e676;
+    --red: #ff4d5e;
+    --blue: #4da3ff;
+    --purple: #b388ff;
+    --aqua: #00e5ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at 20% 0%, #131c2b 0%, var(--bg) 55%);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    line-height: 1.5;
+    padding: 0 0 80px 0;
+  }
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,14,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  .logo span { color: var(--gold); }
+  .live { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  nav { display: flex; gap: 4px; padding: 12px 28px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--panel-2); }
+  .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--dim); border: 1px solid transparent; transition: all .15s; }
+  .tab:hover { color: var(--ink); background: var(--panel); }
+  .tab.active { color: var(--gold); border-color: var(--border); background: var(--panel); }
+  main { padding: 28px; max-width: 1400px; margin: 0 auto; }
+  .view { display: none; animation: fade .3s; }
+  .view.active { display: block; }
+  @keyframes fade { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  h2 { font-size: 15px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; margin-bottom: 16px; font-weight: 600; }
+  h3 { font-size: 18px; margin-bottom: 6px; }
+  .grid { display: grid; gap: 16px; }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 900px) { .g4,.g3,.g2 { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .stat { font-size: 32px; font-weight: 700; color: var(--gold); }
+  .stat.green { color: var(--green); } .stat.blue { color: var(--blue); } .stat.purple { color: var(--purple); }
+  .label { font-size: 12px; color: var(--dim); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .sub { font-size: 11px; color: var(--dim); margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--dim); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+  td { padding: 10px; border-bottom: 1px solid var(--panel-2); }
+  tr:hover td { background: var(--panel-2); }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .ok { background: rgba(0,230,118,.12); color: var(--green); }
+  .miss { background: rgba(255,77,94,.12); color: var(--red); }
+  .pend { background: rgba(255,210,48,.12); color: var(--gold); }
+  /* Cape Canaveral rocket */
+  .rocket-track { display: flex; flex-direction: column-reverse; gap: 0; align-items: center; padding: 20px 0; }
+  .phase { width: 100%; max-width: 520px; padding: 14px 18px; border: 1px solid var(--border); border-left: 4px solid var(--dim); border-radius: 8px; margin: 4px 0; background: var(--panel-2); position: relative; }
+  .phase.lit { border-left-color: var(--gold); box-shadow: -2px 0 20px rgba(255,210,48,.15); }
+  .phase .pname { font-weight: 700; font-size: 14px; }
+  .phase .pdesc { font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .phase .pnum { position: absolute; right: 16px; top: 14px; font-size: 22px; opacity: .25; }
+  .four-struct { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .struct { padding: 18px; border-radius: 12px; border: 1px solid var(--border); }
+  .struct.pe { background: linear-gradient(135deg, rgba(255,77,94,.08), transparent); border-color: rgba(255,77,94,.3); }
+  .struct.ke { background: linear-gradient(135deg, rgba(0,230,118,.08), transparent); border-color: rgba(0,230,118,.3); }
+  .struct.sup { background: linear-gradient(135deg, rgba(77,163,255,.08), transparent); border-color: rgba(77,163,255,.3); }
+  .struct.res { background: linear-gradient(135deg, rgba(179,136,255,.08), transparent); border-color: rgba(179,136,255,.3); }
+  .struct h4 { font-size: 15px; margin-bottom: 6px; }
+  .struct p { font-size: 12px; color: var(--dim); }
+  .thought { background: var(--panel-2); border-left: 3px solid var(--purple); padding: 12px 16px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; }
+  .thought .t-tag { color: var(--purple); font-size: 11px; font-weight: 700; }
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
+  .agent { padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2); font-size: 12px; text-align: center; }
+  .agent .a-tf { font-weight: 700; font-size: 16px; color: var(--aqua); }
+  .agent .a-status { font-size: 10px; color: var(--dim); margin-top: 4px; }
+  .agent.planned { opacity: .5; }
+  .bar { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--green)); }
+  .northstar { text-align: center; padding: 30px; }
+  .northstar .star { font-size: 48px; }
+  .metric-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--panel-2); font-size: 13px; }
+  .metric-row b { color: var(--gold); }
+  svg { display: block; }
+  .legend { font-size: 11px; color: var(--dim); margin-top: 10px; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--panel-2); color: var(--dim); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">QUANT·<span>BRAIN</span> Mission Control</div>
+  <div class="live"><span class="dot"></span> WebSocket capturer LIVE · PID 50499 · <span id="clock"></span></div>
+</header>
+<nav>
+  <div class="tab active" data-v="overview">Overview</div>
+  <div class="tab" data-v="data">Data Vault</div>
+  <div class="tab" data-v="phases">Cape Canaveral</div>
+  <div class="tab" data-v="structures">Four Structures</div>
+  <div class="tab" data-v="signals">NOI Signals</div>
+  <div class="tab" data-v="agents">Auto-Research Fleet</div>
+  <div class="tab" data-v="thoughts">411 Archive</div>
+  <div class="tab" data-v="northstar">North Star</div>
+</nav>
+<main>
+
+<!-- OVERVIEW -->
+<section class="view active" id="overview">
+  <h2>System Status — what exists right now</h2>
+  <div class="grid g4">
+    <div class="card"><div class="stat green">8.1 GB</div><div class="label">Live data captured</div><div class="sub">2 trading days, 3 channels</div></div>
+    <div class="card"><div class="stat">9,539</div><div class="label">Live parquet files</div><div class="sub">trades + NOI + minute aggs</div></div>
+    <div class="card"><div class="stat blue">1.4 GB</div><div class="label">Historical (S3 flat files)</div><div class="sub">17mo daily · 30d minute · 7mo options</div></div>
+    <div class="card"><div class="stat purple">806</div><div class="label">Watchlist tickers</div><div class="sub">Whale Consensus, deduplicated</div></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><div class="stat">18</div><div class="label">Wiki pages</div><div class="sub">indicator suite + synthesis</div></div>
+    <div class="card"><div class="stat">11</div><div class="label">Recon documents</div><div class="sub">Massive, WhaleWisdom, NOI alpha</div></div>
+    <div class="card"><div class="stat">8</div><div class="label">Indicators cataloged</div><div class="sub">~200 detection plots</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>The Mission, in one sentence</h3>
+    <p style="color:var(--dim); margin-top:8px">Find the stock at the absolute bottom of an <b style="color:var(--gold)">unbreakable Volume Order Block</b> — the moment Cape Canaveral is built and the rocket is about to ignite — and ride it to Mars. Low frequency. Extreme conviction. Massive asymmetry. Never talk about risk management. Honor the beautiful mind.</p>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>What's still missing (the honest punch list)</h3>
+    <table>
+      <tr><td>13F downloads (WhaleWisdom)</td><td><span class="pill miss">NOT DONE</span></td><td style="color:var(--dim)">server unreachable from AT&T + HMAC auth</td></tr>
+      <tr><td>Full ETF historical download</td><td><span class="pill miss">NOT DONE</span></td><td style="color:var(--dim)">flows + constituents partial</td></tr>
+      <tr><td>Heavy Weapons Singles v2</td><td><span class="pill pend">NOT IN REPO</span></td><td style="color:var(--dim)">8th indicator, needs adding to GitHub</td></tr>
+      <tr><td>Pine → Python translation</td><td><span class="pill pend">PENDING</span></td><td style="color:var(--dim)">separate session, parity verification</td></tr>
+      <tr><td>Per-timeframe agent fleet</td><td><span class="pill pend">DESIGNED</span></td><td style="color:var(--dim)">architecture mapped, not wired</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- DATA VAULT -->
+<section class="view" id="data">
+  <h2>Data Vault — every byte we have, where it lives</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Live WebSocket Capture</h3>
+      <table>
+        <tr><th>Channel</th><th>Files</th><th>What</th></tr>
+        <tr><td>Trades</td><td>6,472</td><td>tick-level, nanosecond</td></tr>
+        <tr><td>NOI</td><td>1,047</td><td>NYSE order imbalance (open+close)</td></tr>
+        <tr><td>Minute aggs</td><td>2,020</td><td>1-min OHLCV bars</td></tr>
+      </table>
+      <p class="sub">NOI is WebSocket-ONLY. If this stops, that data is gone forever.</p>
+    </div>
+    <div class="card">
+      <h3>Historical (Massive S3 flat files)</h3>
+      <table>
+        <tr><th>Set</th><th>Size</th><th>Range</th></tr>
+        <tr><td>Daily bars</td><td>79 MB</td><td>17 months, all US stocks</td></tr>
+        <tr><td>Minute bars</td><td>808 MB</td><td>30 days, all US stocks</td></tr>
+        <tr><td>Options daily</td><td>497 MB</td><td>7 months</td></tr>
+      </table>
+      <p class="sub">Available to pull: 23 years tick data, options tick from 2022.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Storage Capacity</h3>
+    <div class="metric-row"><span>OWC enclosure</span><b>~180–190 TB free</b></div>
+    <div class="metric-row"><span>Google Drive</span><b>~30 TB free</b></div>
+    <div class="metric-row"><span>External drive</span><b>~4 TB free</b></div>
+    <p class="sub">Storage is not the constraint. Filling it with the right data is.</p>
+  </div>
+</section>
+
+<!-- CAPE CANAVERAL -->
+<section class="view" id="phases">
+  <h2>Cape Canaveral — the phase system (replaces grading)</h2>
+  <p style="color:var(--dim); margin-bottom:20px">Binary checkpoints, not 1–10 scores. Each phase forces a real diagnosis: what critical thinking, what cryptography, what pattern, what equation got us here.</p>
+  <div class="rocket-track">
+    <div class="phase"><span class="pnum">5</span><div class="pname">🚀 LAUNCH — success or explode on pad</div><div class="pdesc">Did potential energy convert to a sustained move, or fail?</div></div>
+    <div class="phase"><span class="pnum">4</span><div class="pname">🔥 IGNITION</div><div class="pdesc">Potential → kinetic transfer. The violent reaction. The bar where it goes.</div></div>
+    <div class="phase"><span class="pnum">3</span><div class="pname">⛽ ROCKET FUEL LOADED</div><div class="pdesc">Max potential energy — extreme bearish structure embedded in the VOB.</div></div>
+    <div class="phase lit"><span class="pnum">2</span><div class="pname">✅ PLATFORM APPROVED</div><div class="pdesc">VOB validated as unbreakable. Tensile strength confirmed across tiers.</div></div>
+    <div class="phase lit"><span class="pnum">1</span><div class="pname">🏗️ CAPE CANAVERAL BUILT</div><div class="pdesc">A VOB platform exists. Price has somewhere to launch from.</div></div>
+  </div>
+  <p class="legend">Lit phases = where the system can currently diagnose. Phases 3–5 need the tensile-strength model + per-timeframe agents wired in.</p>
+</section>
+
+<!-- FOUR STRUCTURES -->
+<section class="view" id="structures">
+  <h2>The Four Structures — everything diagnoses these</h2>
+  <p style="color:var(--dim); margin-bottom:20px">Every indicator, every detection plot, every agent has ONE job: classify where on the spectrum these four structures sit. Output is always BUY or SHORT.</p>
+  <div class="four-struct">
+    <div class="struct pe"><h4 style="color:var(--red)">⚡ Potential Energy</h4><p>Max stored energy on a candle — the extreme bearish (for longs) structure about to convert. The rocket fuel.</p></div>
+    <div class="struct ke"><h4 style="color:var(--green)">🚀 Kinetic Energy</h4><p>The propulsion moment. The release. Different types — we care about full-jet-fuel kinetic right next to its potential source.</p></div>
+    <div class="struct sup"><h4 style="color:var(--blue)">🏗️ Support Platform</h4><p>The floor. VOB / order block / propulsion block. How anti-fragile is it? Will it break?</p></div>
+    <div class="struct res"><h4 style="color:var(--purple)">🧱 Resistance</h4><p>The ceiling. The opposing structure. The asymmetry between floor and ceiling is the opportunity.</p></div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <h3>The diagnostic question (biochemistry model)</h3>
+    <p style="color:var(--dim); margin-top:8px">Is this <b style="color:var(--green)">metastatic</b> (going to explode in one direction — what we want) or <b style="color:var(--dim)">homeostatic</b> (going nowhere)? Each structure gets a real/pretender classification. A 99.6 bearish structure that does NOT push price down = the most rocket fuel that exists. That's where gold lives.</p>
+  </div>
+</section>
+
+<!-- NOI SIGNALS -->
+<section class="view" id="signals">
+  <h2>NOI Signals — yesterday's close → today's setups</h2>
+  <p style="color:var(--dim); margin-bottom:16px">Net market bias <b style="color:var(--red)">SELL</b> — $2.0B notional imbalance. Per CIR framework: broad reversal (BUY) pressure over 3–5 days. 83% historical reversal rate.</p>
+  <div class="card">
+    <h3>Top CIR LONG signals (sell imbalance → buy reversal)</h3>
+    <table>
+      <tr><th>Ticker</th><th>Notional</th><th>Ratio</th><th>Conf</th><th>Sector flow</th></tr>
+      <tr><td><b>AZO</b></td><td>$30.6M</td><td>0.47</td><td>0.74</td><td><span class="tag">retail</span></td></tr>
+      <tr><td><b>DKS</b></td><td>$15.9M</td><td>0.28</td><td>0.64</td><td><span class="pill pend">earnings 5/28</span></td></tr>
+      <tr><td><b>NRG</b></td><td>$14.5M</td><td>0.20</td><td>0.60</td><td><span class="tag">utilities</span></td></tr>
+      <tr><td><b>LLY</b></td><td>$51.1M</td><td>0.13</td><td>0.56</td><td><span class="pill miss">healthcare ↓ fighting</span></td></tr>
+      <tr><td><b>GEV</b></td><td>$19.1M</td><td>0.13</td><td>0.56</td><td><span class="pill ok">industrials ↑</span></td></tr>
+    </table>
+    <p class="sub">Best confluence (NOI buy + inflowing sector): GEV, NOW, GWW, FIX. Caution: LLY largest but healthcare hemorrhaging.</p>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Day-1 OIA performance (proof the signal works)</h3>
+    <table>
+      <tr><th>Ticker</th><th>Dir</th><th>20-min</th><th>Result</th></tr>
+      <tr><td>AA</td><td>BUY</td><td>+1.42%</td><td><span class="pill ok">HOME RUN</span></td></tr>
+      <tr><td>KLAR</td><td>BUY</td><td>+2.50% EOD</td><td><span class="pill ok">WIN (slow)</span></td></tr>
+      <tr><td>TDG</td><td>BUY</td><td>-0.58%</td><td><span class="pill miss">LOSS</span></td></tr>
+    </table>
+    <p class="sub">Confirmed: bigger notional imbalance = stronger signal. AA had the largest, won the most.</p>
+  </div>
+</section>
+
+<!-- AGENTS -->
+<section class="view" id="agents">
+  <h2>Auto-Research Fleet — Karpathy method, per-timeframe</h2>
+  <p style="color:var(--dim); margin-bottom:16px">Every timeframe is a different planet. Each gets a dedicated VOB specialist running 24/7, locally, no token cost. Modify → backtest → keep/revert → update wiki → loop forever.</p>
+  <h3 style="margin-bottom:12px; font-size:14px; color:var(--dim)">VOB SPECIALIST AGENTS (one per timeframe)</h3>
+  <div class="agent-grid">
+    <div class="agent"><div class="a-tf">1m</div><div class="a-status planned">planned</div></div>
+    <div class="agent"><div class="a-tf">3m</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">5m</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">10m</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">15m</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">30m</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">1h</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">2h</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">3h</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">1D</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">2D</div><div class="a-status">planned</div></div>
+    <div class="agent"><div class="a-tf">1W</div><div class="a-status">planned</div></div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <h3>Knowledge-Graph Researcher (the dot-connector)</h3>
+    <p style="color:var(--dim); margin-top:8px">24/7 agent connecting your 411 thoughts + WebSocket + flat files. Generates hypotheses, tests them locally, kills bad ones, keeps good ones. Costs nothing in tokens. No downside — maybe an idea you thought was dumb proves amazing.</p>
+    <div class="bar"><span style="width:8%"></span></div>
+    <p class="sub">8% — architecture designed, not yet running.</p>
+  </div>
+</section>
+
+<!-- THOUGHTS -->
+<section class="view" id="thoughts">
+  <h2>411 Archive — your beautiful mind, preserved</h2>
+  <p style="color:var(--dim); margin-bottom:16px">Every raw thought captured verbatim, timestamped. Source material for the knowledge-graph researcher. Nothing lost between sessions.</p>
+  <div class="thought"><span class="t-tag">ROCKET ANALOGY</span><br>Cape Canaveral = VOB platform. Bearish structure = rocket fuel. Mars = North Star. The straight line = everything about the launch. No long run without potential→kinetic transfer.</div>
+  <div class="thought"><span class="t-tag">100 DISCIPLINES</span><br>100 disciplines × 100 equations each. Map detection plots onto the world's hardest-solved problems. "Name the rocket fuel in one bar." Every discipline solves problems the same way — different vernacular.</div>
+  <div class="thought"><span class="t-tag">CRYPTOGRAPHY = PROBLEM SOLVING</span><br>The market is a code. Jane Street made $40B — not random. For our game, we must KNOW we'll win or we don't play.</div>
+  <div class="thought"><span class="t-tag">SIVEF 10x</span><br>Bought $0.88 → $9.40 in ~2 months. Saw the VOB line BEFORE it formed from Nagasaki/Hiroshima clusters. Born the HCT idea. Predict the platform, don't chase the rocket.</div>
+  <div class="thought"><span class="t-tag">MANUAL LABELING</span><br>You as oracle. 100–700 charts/session on mic: ticker, timeframe, candle, sensitivity, VOB-formed. A year = a dataset no algorithm can make.</div>
+  <div class="thought"><span class="t-tag">THE PAIN</span><br>No cockpit. Can't see anything. ADHD: invisible = doesn't exist. This dashboard is the first answer to that.</div>
+  <p class="sub">Full archive: /quant-brain/archive/411/ and /archive/case-studies/</p>
+</section>
+
+<!-- NORTH STAR -->
+<section class="view" id="northstar">
+  <h2>The North Star — the only scorecard</h2>
+  <div class="card northstar">
+    <svg width="120" height="120" viewBox="0 0 120 120" style="margin:0 auto 16px">
+      <defs><radialGradient id="g"><stop offset="0%" stop-color="#ffd230"/><stop offset="100%" stop-color="#ff8a00"/></radialGradient></defs>
+      <polygon points="60,8 72,46 112,46 80,70 92,110 60,84 28,110 40,70 8,46 48,46" fill="url(#g)"/>
+    </svg>
+    <h3>Predict the VOB line forming — at inception</h3>
+    <p style="color:var(--dim); max-width:600px; margin:10px auto">The moment of birth. As early as 3 bars. With maximum confidence you can measure. That's the entire system. Everything else is diagnostic tooling pointed at this one target.</p>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>The six simultaneous targets (the confusion-matrix corner)</h3>
+    <div class="metric-row"><span>Sensitivity (catch every real move)</span><b>→ 1.00</b></div>
+    <div class="metric-row"><span>Specificity (skip every fake)</span><b>→ 1.00</b></div>
+    <div class="metric-row"><span>Positive Predictive Value</span><b>→ 1.00</b></div>
+    <div class="metric-row"><span>Negative Predictive Value</span><b>→ 1.00</b></div>
+    <div class="metric-row"><span>Accuracy</span><b>→ 1.00</b></div>
+    <div class="metric-row"><span>Precision</span><b>→ 1.00</b></div>
+    <p class="sub">The (1,1,1,1,1,1) corner is the asymptote, not the floor. "No one is 100%" is an admission you stopped optimizing.</p>
+  </div>
+</section>
+
+</main>
+<script>
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.v).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago'}) + ' CT'; }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
